@@ -55,11 +55,19 @@ export function InactivityGuard({ children }: InactivityGuardProps) {
       }
     };
 
-    const events = ["mousemove", "mousedown", "keypress", "scroll", "touchstart"];
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        lastActiveRef.current = Date.now();
+      }
+    };
+
+    const events = ["mousemove", "mousedown", "keypress", "scroll", "touchstart", "pointerdown", "click", "touchend"];
     events.forEach((event) => window.addEventListener(event, handleActivity));
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       events.forEach((event) => window.removeEventListener(event, handleActivity));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 

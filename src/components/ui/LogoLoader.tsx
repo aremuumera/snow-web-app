@@ -30,7 +30,7 @@ export function LogoLoader({ className = "", size = 48 }: LogoLoaderProps) {
           scale: [0.96, 1, 1, 0.96, 0.96],
         }}
         transition={{
-          duration: 2.8,
+          duration: 1.2,
           ease: "easeInOut",
           repeat: Infinity,
           times: [0, 0.4, 0.7, 0.9, 1],

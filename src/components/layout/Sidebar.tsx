@@ -11,6 +11,8 @@ import { Sun, Moon, X, ChevronDown, ChevronUp, Home } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useDrawer } from "@/context/DrawerContext";
 
+import { AnimatedLogo } from "@/components/ui/AnimatedLogo";
+
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -98,11 +100,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Logo Area */}
       <div className="flex items-center justify-between px-2 mb-8">
-        <img
-          src={isDark ? app_config.LogoLight : app_config.LogoDark}
-          alt={app_config.name}
-          className="h-8 object-contain"
-        />
+        {/* <img
+                src={isDark ? app_config.LogoLight : app_config.LogoDark}
+                alt={app_config.name}
+                className="h-7 object-contain"
+              /> */}
+        <AnimatedLogo />
         {/* Close button — mobile only */}
         <button
           onClick={onClose}

@@ -57,12 +57,16 @@ export default function SupportPage() {
 
   const handleStartZoho = () => {
     if (typeof window === "undefined") return;
-    const widgetCode = process.env.NEXT_PUBLIC_ZOHO_WIDGET_CODE || "siqf9dfb10705a60e0a514d7a8e52a92baefd1645e99caef201c10756782ff79601";
+    const widgetCode = process.env.NEXT_PUBLIC_ZOHO_WIDGET_CODE || "siq00d91e7c1c7ffc56f63cb0ddf4ae0c27b61c20436c81761ef8eec23f655a025a";
     
     if (document.getElementById("zsiqscript")) {
       const zoho = (window as any).$zoho;
       if (zoho?.salesiq?.chat?.start) {
-        zoho.salesiq.chat.start();
+        try {
+          zoho.salesiq.chat.start();
+        } catch (e) {
+          console.error("Zoho error on start:", e);
+        }
       }
       return;
     }
@@ -76,7 +80,11 @@ export default function SupportPage() {
           (window as any).$zoho.salesiq.floatwindow.visible("hide");
         }
         if ((window as any).$zoho.salesiq.chat?.start) {
-          (window as any).$zoho.salesiq.chat.start();
+          try {
+            (window as any).$zoho.salesiq.chat.start();
+          } catch (e) {
+            console.error("Zoho error on start:", e);
+          }
         }
       },
     };
@@ -86,7 +94,7 @@ export default function SupportPage() {
     s.type = "text/javascript";
     s.id = "zsiqscript";
     s.defer = true;
-    s.src = "https://salesiq.zoho.com/widget";
+    s.src = `https://salesiq.zohopublic.com/widget?wc=${widgetCode}`;
     const t = d.getElementsByTagName("script")[0];
     if (t && t.parentNode) {
       t.parentNode.insertBefore(s, t);

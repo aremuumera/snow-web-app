@@ -73,6 +73,7 @@ function MessagesContent() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isCreatingSupportRoom, setIsCreatingSupportRoom] = useState(false);
   const [activeImagePreview, setActiveImagePreview] = useState<string | null>(null);
+  const [zohoActive, setZohoActive] = useState(false);
 
   // Handle query parameter auto-initialization/room selection
   useEffect(() => {
@@ -137,12 +138,7 @@ function MessagesContent() {
     return () => unsubscribe();
   }, []);
 
-  // Sync the active room when rooms list loads and none is active (matching mobile chat tab default focus)
-  useEffect(() => {
-    if (activeRoomId === "zoho_support" && firestoreRooms.length > 0 && !queryTradeId) {
-      setActiveRoomId(firestoreRooms[0].chatId);
-    }
-  }, [firestoreRooms, activeRoomId, queryTradeId]);
+
 
   // Fetch Firestore Chat Rooms list using Firebase Auth UID (matching mobile useChatList)
   useEffect(() => {
@@ -238,12 +234,7 @@ function MessagesContent() {
     scrollToBottom();
   }, [activeMessages]);
 
-  // Auto-trigger Zoho SalesIQ when selecting general live support
-  useEffect(() => {
-    if (activeRoomId === "zoho_support") {
-      handleStartZoho();
-    }
-  }, [activeRoomId]);
+
 
   // Zoho Launcher handler
   const handleStartZoho = () => {
@@ -261,7 +252,7 @@ function MessagesContent() {
       return;
     }
 
-    const widgetCode = process.env.NEXT_PUBLIC_ZOHO_WIDGET_CODE || "siqf9dfb10705a60e0a514d7a8e52a92baefd1645e99caef201c10756782ff79601";
+    const widgetCode = process.env.NEXT_PUBLIC_ZOHO_WIDGET_CODE || "siq00d91e7c1c7ffc56f63cb0ddf4ae0c27b61c20436c81761ef8eec23f655a025a";
 
     (window as any).$zoho = (window as any).$zoho || {};
     (window as any).$zoho.salesiq = (window as any).$zoho.salesiq || {
@@ -286,12 +277,50 @@ function MessagesContent() {
     s.type = "text/javascript";
     s.id = "zsiqscript";
     s.defer = true;
-    s.src = "https://salesiq.zoho.com/widget";
+    s.src = `https://salesiq.zohopublic.com/widget?wc=${widgetCode}`;
     const t = d.getElementsByTagName("script")[0];
     if (t && t.parentNode) {
       t.parentNode.insertBefore(s, t);
     } else {
       d.body.appendChild(s);
+    }
+  };
+
+  // Toggle Zoho SalesIQ Chat Window
+  const handleToggleZoho = () => {
+    if (typeof window === "undefined") return;
+    const zoho = (window as any).$zoho;
+
+    // If script isn't loaded yet, load and display it
+    if (!document.getElementById("zsiqscript") || !zoho || !zoho.salesiq) {
+      handleStartZoho();
+      setZohoActive(true);
+      return;
+    }
+
+    if (zohoActive) {
+      // Close/minimize the Zoho window and hide the float bubble
+      try {
+        if (zoho.salesiq.floatwindow?.visible) {
+          zoho.salesiq.floatwindow.visible("hide");
+        }
+      } catch (e) {
+        console.warn("Zoho floatwindow hide error:", e);
+      }
+      setZohoActive(false);
+    } else {
+      // Make float bubble visible and start the chat window
+      try {
+        if (zoho.salesiq.floatwindow?.visible) {
+          zoho.salesiq.floatwindow.visible("show");
+        }
+        if (zoho.salesiq.chat?.start) {
+          zoho.salesiq.chat.start();
+        }
+      } catch (e) {
+        console.warn("Zoho chat start error:", e);
+      }
+      setZohoActive(true);
     }
   };
 
@@ -659,7 +688,6 @@ function MessagesContent() {
             setActiveRoomId("zoho_support");
             setMobileView("chat");
             setShowSidebar(false);
-            handleStartZoho();
           }}
           className={`w-full px-5 py-4 flex gap-3.5 text-left transition-all hover:bg-light-75 dark:hover:bg-dark-800/10 cursor-pointer border-b border-border-light/20 dark:border-border-dark/20 ${activeRoomId === "zoho_support" ? "bg-light-100 dark:bg-dark-800/20 border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent"
             }`}
@@ -883,10 +911,14 @@ function MessagesContent() {
 
           {activeRoomId === "zoho_support" && (
             <button
-              onClick={() => setIsFallbackSupportModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-full text-[11px] font-primary-bold border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all cursor-pointer hover:scale-105 active:scale-95 select-none animate-fade-in"
+              onClick={handleToggleZoho}
+              className={`px-4.5 py-1.5 rounded-full text-[11px] font-primary-bold border transition-all cursor-pointer hover:scale-105 active:scale-95 select-none animate-fade-in ${
+                zohoActive 
+                  ? "bg-primary-500 border-primary-500 text-white" 
+                  : "border-border-light dark:border-border-dark text-text-primary-light dark:text-text-primary-dark hover:bg-light-100 dark:hover:bg-dark-800"
+              }`}
             >
-              Fix Zoho
+              {zohoActive ? "Close Chat" : "Open Chat"}
             </button>
           )}
         </div>
@@ -897,13 +929,19 @@ function MessagesContent() {
             <div className="w-20 h-20 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center animate-pulse">
               <HelpCircle className="w-10 h-10" />
             </div>
-            <div className="max-w-md flex flex-col gap-2">
+            <div className="max-w-md flex flex-col gap-4 items-center">
               <h4 className="text-h6 font-primary-bold text-text-primary-light dark:text-text-primary-dark">
                 General Live Support Channel
               </h4>
-              <p className="text-b2 font-primary-regular text-text-secondary-light dark:text-text-secondary-dark">
-                Live Support widget is launching. Please check the bottom right corner of your screen to communicate with our customer support agents.
+              <p className="text-b2 font-primary-regular text-text-secondary-light dark:text-text-secondary-dark leading-relaxed">
+                Connect with our live support team instantly. Click the button below (or at the top-right) to toggle the support chat widget.
               </p>
+              <button
+                onClick={handleToggleZoho}
+                className="mt-2 px-8 py-3.5 rounded-full text-b2 font-primary-bold text-white bg-primary-500 hover:bg-primary-600 active:scale-95 transition-all cursor-pointer shadow-md select-none animate-fade-in"
+              >
+                {zohoActive ? "Close Live Support Chat" : "Open Live Support Chat"}
+              </button>
             </div>
           </div>
         ) : !isFirebaseReady ? (
@@ -956,7 +994,7 @@ function MessagesContent() {
             )}
 
             {/* Messages scrolling view */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 md:p-6 flex flex-col gap-3 md:gap-4 scrollbar-thin scrollbar-thumb-light-200 dark:scrollbar-thumb-dark-800">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 md:p-6 pb-28 md:pb-6 flex flex-col gap-3 md:gap-4 scrollbar-thin scrollbar-thumb-light-200 dark:scrollbar-thumb-dark-800">
               {activeMessages.length === 0 && <MessagesSkeleton />}
               {activeMessages.map((msg) => {
                 const isUser = msg.senderType === "user";
@@ -1039,85 +1077,88 @@ function MessagesContent() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Attachment preview banner */}
-            {filePreview && (
-              <div className="bg-light-100 dark:bg-dark-800 p-3.5 border-t border-border-light dark:border-border-dark flex items-center justify-between gap-4 shrink-0">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <img
-                    src={filePreview}
-                    alt="attachment upload preview"
-                    className="w-12 h-12 object-cover rounded-xl border border-border-light dark:border-border-dark shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <span className="text-b3 font-primary-bold text-text-primary-light dark:text-text-primary-dark truncate block">
-                      {selectedFile?.name}
-                    </span>
-                    <span className="text-[10px] text-text-secondary-light dark:text-text-secondary-dark block mt-0.5">
-                      Image attached
-                    </span>
+            {/* Bottom composer and attachment wrapper */}
+            <div className="fixed bottom-0 left-0 right-0 z-20 md:relative bg-surface-light dark:bg-surface-dark md:bg-transparent border-t border-border-light dark:border-border-dark md:border-t-0 shrink-0">
+              {/* Attachment preview banner */}
+              {filePreview && (
+                <div className="bg-light-100 dark:bg-dark-800 p-3.5 border-b border-border-light dark:border-border-dark flex items-center justify-between gap-4 shrink-0 animate-fade-in">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <img
+                      src={filePreview}
+                      alt="attachment upload preview"
+                      className="w-12 h-12 object-cover rounded-xl border border-border-light dark:border-border-dark shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-b3 font-primary-bold text-text-primary-light dark:text-text-primary-dark truncate block">
+                        {selectedFile?.name}
+                      </span>
+                      <span className="text-[10px] text-text-secondary-light dark:text-text-secondary-dark block mt-0.5">
+                        Image attached
+                      </span>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setFilePreview(null);
+                    }}
+                    className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950 text-red-500 hover:scale-105 transition-all cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setFilePreview(null);
-                  }}
-                  className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950 text-red-500 hover:scale-105 transition-all cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+              )}
 
-            {/* Message composer */}
-            {isChatClosed ? (
-              <div className="p-5 border-t border-border-light dark:border-border-dark flex items-center justify-center gap-3 shrink-0 bg-light-50 dark:bg-dark-900/10">
-                <span className="text-[13px] font-primary-medium text-text-tertiary-light dark:text-text-tertiary-dark">Chat is closed.</span>
-                <button onClick={handleReopenChat} className="text-[13px] font-primary-bold text-primary-500 hover:underline cursor-pointer">Reopen to send messages</button>
-              </div>
-            ) : (
-              <form onSubmit={handleSend} className="p-2.5 md:p-5 border-t border-border-light dark:border-border-dark flex items-center gap-2 md:gap-3 shrink-0 bg-light-50 dark:bg-dark-900/10">
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2.5 md:p-3 rounded-2xl bg-light-100 dark:bg-dark-800 hover:bg-light-150 dark:hover:bg-dark-700 transition-colors text-text-secondary-light dark:text-text-secondary-dark cursor-pointer shrink-0 border border-border-light/50 dark:border-border-dark/20"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
-
-                <div className="flex-1 min-w-0">
+              {/* Message composer */}
+              {isChatClosed ? (
+                <div className="p-5 flex items-center justify-center gap-3 shrink-0 bg-light-50 dark:bg-dark-900/10">
+                  <span className="text-[13px] font-primary-medium text-text-tertiary-light dark:text-text-tertiary-dark">Chat is closed.</span>
+                  <button onClick={handleReopenChat} className="text-[13px] font-primary-bold text-primary-500 hover:underline cursor-pointer">Reopen to send messages</button>
+                </div>
+              ) : (
+                <form onSubmit={handleSend} className="p-2.5 md:p-5 flex items-center gap-2 md:gap-3 shrink-0 bg-light-50 dark:bg-dark-900/10">
                   <input
-                    type="text"
-                    placeholder="Type your message here..."
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    disabled={sending}
-                    className="w-full bg-light-100 dark:bg-dark-800 border-none outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 py-3 px-3 md:px-4 rounded-[20px] text-b2 font-primary-regular text-text-primary-light dark:text-text-primary-dark placeholder:text-text-disabled-light dark:placeholder:text-text-disabled-dark transition-all duration-200"
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={sending}
-                  className="h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center text-white bg-primary-500 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:opacity-80 transition-all"
-                >
-                  {sending ? (
-                    <Loader2 className="w-5.5 h-5.5 animate-spin text-white" />
-                  ) : (
-                    <Send className="w-5.5 h-5.5 text-white" />
-                  )}
-                </button>
-              </form>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2.5 md:p-3 rounded-2xl bg-light-100 dark:bg-dark-800 hover:bg-light-150 dark:hover:bg-dark-700 transition-colors text-text-secondary-light dark:text-text-secondary-dark cursor-pointer shrink-0 border border-border-light/50 dark:border-border-dark/20"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      placeholder="Type your message here..."
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      disabled={sending}
+                      className="w-full bg-light-100 dark:bg-dark-800 border-none outline-none focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 py-3 px-3 md:px-4 rounded-[20px] text-b2 font-primary-regular text-text-primary-light dark:text-text-primary-dark placeholder:text-text-disabled-light dark:placeholder:text-text-disabled-dark transition-all duration-200"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={sending}
+                    className="h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center text-white bg-primary-500 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:opacity-80 transition-all"
+                  >
+                    {sending ? (
+                      <Loader2 className="w-5.5 h-5.5 animate-spin text-white" />
+                    ) : (
+                      <Send className="w-5.5 h-5.5 text-white" />
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         )}
       </div>

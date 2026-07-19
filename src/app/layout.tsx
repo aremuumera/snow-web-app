@@ -4,6 +4,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ThemeProvider } from "@/context/ThemeProvider";
 import { ToastProvider } from "@/context/ToastProvider";
 import { ReduxProvider } from "@/providers/ReduxProvider";
+import Script from "next/script";
 import "./globals.css";
 import { app_config } from "@/utils/config";
 
@@ -20,6 +21,13 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: `${app_config.name} - Secure Gift Card & Crypto Trading`,
   description: "Trade gift cards and crypto assets instantly with the best rates and secure payments.",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -43,6 +51,17 @@ export default function RootLayout({
             </ThemeProvider>
           </NextThemesProvider>
         </ReduxProvider>
+
+        {/* Zoho SalesIQ Support Widget */}
+        <Script id="zoho-init" strategy="afterInteractive">
+          {`window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}`}
+        </Script>
+        <Script
+          id="zsiqscript"
+          src="https://salesiq.zohopublic.com/widget?wc=siq00d91e7c1c7ffc56f63cb0ddf4ae0c27b61c20436c81761ef8eec23f655a025a"
+          defer
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

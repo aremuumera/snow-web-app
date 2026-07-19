@@ -5,6 +5,7 @@ import { GuestGuard } from "@/guards/GuestGuard";
 import { useTheme } from "@/context/ThemeProvider";
 import { app_config } from "@/utils/config";
 import { AnimatePresence, motion } from "motion/react";
+import { AnimatedLogo } from "@/components/ui/AnimatedLogo";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -48,11 +49,12 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <div className="max-w-md w-full mx-auto pt-12 lg:pt-24">
             {/* Header logo */}
             <div className="flex mb-8 justify-start">
-              <img
+              {/* <img
                 src={isDark ? app_config.LogoLight : app_config.LogoDark}
                 alt={app_config.name}
                 className="h-7 object-contain"
-              />
+              /> */}
+              <AnimatedLogo />
             </div>
             {children}
           </div>

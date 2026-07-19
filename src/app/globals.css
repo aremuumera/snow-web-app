@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+
+@theme {
+  --color-primary-50: #e8ffe4;
+  --color-primary-100: #dcf0d7;
+  --color-primary-200: #b8e1af;
+  --color-primary-300: #8ccf7d;
+  --color-primary-400: #5ab84b;
+  --color-primary-500: #28a712;
+  --color-primary-600: #20860e;
+  --color-primary-700: #1a650b;
+  --color-primary-800: #103908;
+  --color-primary-900: #0a2305;
+
+  --color-light-50: #FCFCFC;
+  --color-light-75: #F8FAFC;
+  --color-light-100: #EEF2F6;
+  --color-light-150: #FFFFFF;
+  --color-light-200: #EFEFEF;
+  --color-light-300: #CDD5DF;
+  --color-light-400: #1E1E1E;
+  --color-light-500: #697586;
+  --color-light-600: #4B5565;
+  --color-light-700: #363636;
+  --color-light-800: #202939;
+  --color-light-900: #121926;
+  --color-light-950: #0D121C;
+
+  --color-dark-50: #D2D2D2;
+  --color-dark-75: #B4B4B4;
+  --color-dark-100: #8E8E8E;
+  --color-dark-200: #B5B5B5;
+  --color-dark-300: #434343;
+  --color-dark-400: #232323;
+  --color-dark-500: #191919;
+  --color-dark-600: #141414;
+  --color-dark-700: #0F0F0F;
+  --color-dark-750: #111111;
+  --color-dark-800: #0A0A0A;
+  --color-dark-900: #0C0C0C;
+  --color-dark-950: #0D121C;
+
+
+  /* Theme-aware backgrounds and border colors */
+  --color-background-light: #FCFCFC;
+  --color-background-dark: #060606;
+  --color-surface-light: #F6F6F6;
+  --color-surface-dark: #0A0A0A;
+  --color-card-light: #F8FAFC;
+  --color-card-dark: #0F0F0F;
+  --color-disabled-light: #CDD5DF;
+  --color-disabled-dark: #141414;
+  --color-foreground-light: #FFFFFF;
+  --color-foreground-dark: #111111;
+
+  --color-text-primary-light: #121926;
+  --color-text-primary-dark: #D2D2D2;
+  --color-text-secondary-light: #4B5565;
+  --color-text-secondary-dark: #B4B4B4;
+  --color-text-tertiary-light: #697586;
+  --color-text-tertiary-dark: #8E8E8E;
+  --color-text-disabled-light: #CDD5DF;
+  --color-text-disabled-dark: #434343;
+
+  --color-border-light: #EFEFEF;
+  --color-border-dark: #232323;
+
+  /* Semantic Alerts */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+
+  /* Typographies */
+  --font-primary-light: var(--font-mona-sans), sans-serif;
+  --font-primary-regular: var(--font-mona-sans), sans-serif;
+  --font-primary-medium: var(--font-mona-sans), sans-serif;
+  --font-primary-semibold: var(--font-mona-sans), sans-serif;
+  --font-primary-bold: var(--font-mona-sans), sans-serif;
+
+  --font-secondary-light: var(--font-manrope), sans-serif;
+  --font-secondary-regular: var(--font-manrope), sans-serif;
+  --font-secondary-medium: var(--font-manrope), sans-serif;
+  --font-secondary-semibold: var(--font-manrope), sans-serif;
+  --font-secondary-bold: var(--font-manrope), sans-serif;
+  --font-sans: var(--font-mona-sans), sans-serif;
+
+  /* Heading sizes */
+  --text-h1: 3.5rem;
+  /* 56px */
+  --text-h2: 3rem;
+  /* 48px */
+  --text-h3: 2.5rem;
+  /* 40px */
+  --text-h4: 2rem;
+  /* 32px */
+  --text-h5: 1.75rem;
+  /* 28px */
+  --text-h6: 1.5rem;
+  /* 24px */
+  --text-h7: 1.25rem;
+  /* 20px */
+  --text-h8: 1.125rem;
+  /* 18px */
+
+  /* Body sizes */
+  --text-b1: 1rem;
+  /* 16px */
+  --text-b2: 0.875rem;
+  /* 14px */
+  --text-b3: 0.75rem;
+  /* 12px */
+}
+
+@layer base {
+  body {
+    @apply bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark;
+  }
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+
+  /* Firefox */
+  &::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari and Opera */
+  }
+}

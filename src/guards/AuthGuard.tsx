@@ -19,12 +19,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     const token = TokenManager.getToken();
-    if (!token || isLogged !== "authenticated") {
+    if (!token) {
       router.replace(paths.auth.login);
     } else {
       setChecking(false);
     }
-  }, [isLogged, router]);
+  }, [router]);
 
   if (checking) {
     return (

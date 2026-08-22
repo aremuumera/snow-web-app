@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useResetPasswordMutation } from "@/redux/auth/auth_api";
+import {
+  useResetPasswordMutation,
+  useVerifyOtpForPasswordResetMutation,
+  useResendOtpForgotPasswordMutation,
+} from "@/redux/auth/auth_api";
 import { useAppSelector } from "@/redux/store";
-import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { Button } from "@/components/ui/Button";
@@ -36,7 +39,12 @@ export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const sliceEmail = useAppSelector((state: any) => state.auth.email);
-  const [resetPassword, { isLoading }] = useResetPasswordMutation();
+  const [verifyOtpForPasswordReset, { isLoading: isVerifyingOtp }] =
+    useVerifyOtpForPasswordResetMutation();
+  const [resetPassword, { isLoading: isResettingPassword }] =
+    useResetPasswordMutation();
+  const [resendOtpForgotPassword, { isLoading: isResending }] =
+    useResendOtpForgotPasswordMutation();
 
   const email = searchParams.get("email") || sliceEmail;
 
@@ -44,6 +52,14 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [timer, setTimer] = useState(60);
+
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,28 +81,74 @@ export default function ResetPasswordPage() {
 
     try {
       const token = TokenManager.getToken();
-      const payload: Record<string, any> = {
+
+      // Step 1: Verify OTP for Password Reset to get the reset token
+      const verifyPayload: Record<string, any> = {
+        email,
+        otp,
+      };
+      if (token) verifyPayload.token = token;
+
+      const verifyRes = await verifyOtpForPasswordReset({
+        data: verifyPayload,
+      }).unwrap();
+
+      const resetToken =
+        verifyRes?.token || verifyRes?.data?.token || token || undefined;
+
+      // Step 2: Call reset password with reset token and new password
+      const resetPayload: Record<string, any> = {
         password,
         confirm: confirmPassword,
-        confirmPassword,
+        token: resetToken,
       };
-      if (email) payload.email = email;
-      if (otp) payload.otp = otp;
-      if (token) payload.token = token;
+      if (email) resetPayload.email = email;
 
-      const response = await resetPassword({ data: payload }).unwrap();
+      const response = await resetPassword({ data: resetPayload }).unwrap();
 
       if (response?.status === true || response?.success === true) {
         showToast("Password reset successful! Please login.", "success");
         router.push(paths.auth.login);
       } else {
-        showToast(response?.message || "Password reset failed. Please verify your OTP.", "error");
+        showToast(
+          response?.message ||
+            response?.data?.message ||
+            "Password reset failed.",
+          "error"
+        );
       }
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "An error occurred during password reset.";
+      const errMsg =
+        err?.data?.message ||
+        err?.message ||
+        "An error occurred during password reset.";
       showToast(errMsg, "error");
     }
   };
+
+  const handleResend = async () => {
+    if (timer > 0) return;
+    try {
+      const token = TokenManager.getToken();
+      const payload: Record<string, any> = { email };
+      if (token) payload.token = token;
+
+      const response = await resendOtpForgotPassword({
+        data: payload,
+      }).unwrap();
+
+      if (response?.status === true || response?.success === true) {
+        showToast("Reset code resent successfully!", "success");
+        setTimer(60);
+      } else {
+        showToast(response?.message || "Resend failed.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.data?.message || "Failed to resend code.", "error");
+    }
+  };
+
+  const isLoading = isVerifyingOtp || isResettingPassword;
 
   return (
     <div className="flex flex-col gap-6">
@@ -129,6 +191,20 @@ export default function ResetPasswordPage() {
           Reset Password
         </Button>
       </form>
+
+      <div className="flex flex-col items-center gap-2 text-b2 font-primary-regular text-text-secondary-light dark:text-text-secondary-dark">
+        <span>Didn't receive code?</span>
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={timer > 0 || isResending}
+          className={`font-primary-semibold text-primary-500 hover:text-primary-600 transition-colors ${
+            timer > 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+          }`}
+        >
+          {timer > 0 ? `Resend code in ${timer}s` : "Resend Code"}
+        </button>
+      </div>
     </div>
   );
 }

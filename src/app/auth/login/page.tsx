@@ -18,15 +18,16 @@ import { auth as fbAuth } from "@/lib/firebase";
 import { z } from "zod";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(50, "Password must be less than 50 characters")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/,
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
-    ),
+    .min(1, "Password is required")
+    .min(8, "Password must be at least 8 characters"),
 });
 
 export default function LoginPage() {

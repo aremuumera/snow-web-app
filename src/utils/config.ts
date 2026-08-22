@@ -38,6 +38,11 @@ export const app_config = {
   twitterHandle: "@Breppo",
   instagramHandle: "@Breppo",
   websiteHandle: "breppo.com",
+  // App store & play store review links
+  appleReviewLink: "https://apps.apple.com/app/id6470390490?action=write-review",
+  playStoreReviewLink: "https://play.google.com/store/apps/details?id=com.breppo.app",
+  appleAppId: "6470390490",
+  androidPackageName: "com.breppo.myApp",
 } as const;
 
 import app_colors from "../styles/color";

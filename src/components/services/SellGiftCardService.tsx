@@ -9,6 +9,7 @@ import { ConfirmationModal } from "./shared/ConfirmationModal";
 import { PinEntryModal } from "./shared/PinEntryModal";
 import { ProcessingLoader } from "./shared/ProcessingLoader";
 import { BillSuccessModal } from "./shared/BillSuccessModal";
+import { SellGiftCardSuccessModal } from "@/components/modals/SellGiftCardSuccessModal";
 import { ChevronDown, Upload, Trash2, Search, ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDrawer } from "@/context/DrawerContext";
@@ -806,6 +807,11 @@ export function SellGiftCardService() {
                         <span className={`text-b2 font-primary-medium ${isSelected ? 'text-white' : 'text-text-primary-light dark:text-text-primary-dark'}`}>
                           {typeItem.type}
                         </span>
+                        {typeItem.type_description && (
+                          <span className={`text-[11px] font-primary-regular leading-snug ${isSelected ? 'text-white/80' : 'text-text-secondary-light dark:text-text-secondary-dark'}`}>
+                            {typeItem.type_description}
+                          </span>
+                        )}
                         {typeItem.code && (
                           <span className={`text-[10px] font-primary-medium ${isSelected ? 'text-white/70' : 'text-text-secondary-light dark:text-text-secondary-dark'}`}>
                             {typeItem.code}
@@ -861,17 +867,31 @@ export function SellGiftCardService() {
 
       {/* Success Modal */}
       {selectedGC && (
-        <BillSuccessModal
+        <SellGiftCardSuccessModal
           visible={showSuccess}
           onClose={() => setShowSuccess(false)}
-          billType="Gift Card Trade"
-          amount={calculateTotal.toString()}
-          recipient={`${app_config.name} Admin Review`}
-          recipientName={`${selectedGC.name || selectedGC.title} ($${amount})`}
-          referenceId={transactionId}
-          onViewReceipt={() => {
+          onReturnToDashboard={() => {
+            setShowSuccess(false);
             closeDrawer();
-            router.push(`/dashboard/transactions/${transactionId}?type=giftcard`);
+            router.push("/dashboard");
+          }}
+          onViewTradeChat={() => {
+            setShowSuccess(false);
+            closeDrawer();
+            const cardName = selectedGC?.name || selectedGC?.title || "Gift Card";
+            router.push(
+              `/dashboard/messages?tradeId=${transactionId}&cardName=${encodeURIComponent(cardName)}&cardCategory=${encodeURIComponent(cardName)}&amount=${amount}&settlementAmount=${calculateTotal}`
+            );
+          }}
+          data={{
+            cardName: selectedGC?.name || selectedGC?.title || "Gift Card",
+            cardImage: selectedGC?.image || selectedGC?.logoUrls?.[0] || "",
+            country: selectedSub?.country || selectedSub?.name || "",
+            amount: amount,
+            rate: rate || fetchedRateResponse?.rate || 0,
+            settlementAmount: calculateTotal,
+            quantity: quantity,
+            type: selectedCardType?.type || (selectedGC?.name === "Create Your Giftcard Order" ? "Manual" : "Standard"),
           }}
         />
       )}

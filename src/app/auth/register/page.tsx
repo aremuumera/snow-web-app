@@ -102,7 +102,7 @@ export default function RegisterPage() {
       const payload = {
         name,
         email,
-        phone: `${countryCode}${phone}`,
+        phone: `${phone}`,
         phoneCountryCode: "NG", // Default country code matching mobile config
         phoneDialCode: countryCode,
         username,

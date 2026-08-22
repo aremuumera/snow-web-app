@@ -20,7 +20,7 @@ import { paths } from "@/utils/paths";
 import { useTheme } from "@/context/ThemeProvider";
 import { useToast } from "@/context/ToastProvider";
 import { ServiceIcon } from "@/components/ui/ServiceIcon";
-
+import { app_config } from "@/utils/config";
 export default function TransactionDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -32,6 +32,8 @@ export default function TransactionDetailPage() {
   const [getAllTypeDetail, { isLoading }] = useGetAllTypeDetailTransactionMutation();
   const [data, setData] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
+  const [adminImages, setAdminImages] = useState<any[]>([]);
+  const [activeLightboxImages, setActiveLightboxImages] = useState<any[]>([]);
   const [tradeStatus, setTradeStatus] = useState("success");
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -79,6 +81,7 @@ export default function TransactionDetailPage() {
         if (res?.status === "success") {
           setData(res?.transaction);
           setImages(res?.images || []);
+          setAdminImages(res?.admin_images || []);
           setTradeStatus(
             res?.transaction?.plan_status === 0
               ? "pending"
@@ -271,7 +274,18 @@ export default function TransactionDetailPage() {
       : data?.amount;
 
   const handleActionButton = () => {
-    if (tradeStatus === "success" || tradeStatus === "pending") {
+    if (tradeStatus === "success") {
+      if (typeof window !== "undefined") {
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        const isIOS = /iphone|ipad|ipod/.test(userAgent);
+        const reviewUrl = isIOS
+          ? app_config.appleReviewLink
+          : app_config.playStoreReviewLink;
+        
+        window.open(reviewUrl, "_blank", "noopener,noreferrer");
+      }
+      router.push("/dashboard");
+    } else if (tradeStatus === "pending") {
       router.push("/dashboard");
     } else {
       router.push(getDrawerQueryPath());
@@ -439,6 +453,37 @@ export default function TransactionDetailPage() {
                 );
               })}
 
+              {/* Admin Remark / Invalid Gift Card Receipts */}
+              {type === "giftcard" && adminImages?.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-dashed border-border-light dark:border-border-dark flex flex-col gap-2">
+                  <span className="text-b3 font-primary-medium text-text-secondary-light dark:text-text-secondary-dark">
+                    Remark ({adminImages?.length})
+                  </span>
+                  <span className="text-b3 font-primary-bold text-primary-500 pb-2">
+                    Invalid giftcard receipts
+                  </span>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                    {adminImages.map((imgItem: any, idx: number) => {
+                      const imgSrc = typeof imgItem === "string" ? imgItem : imgItem?.image;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setActiveLightboxImages(adminImages);
+                            setCurrentImageIndex(idx);
+                            setVisibleImage(true);
+                          }}
+                          className="relative w-44 h-20 rounded-2xl overflow-hidden shrink-0 border border-border-light dark:border-border-dark hover:scale-[1.03] transition-all cursor-pointer bg-light-100 dark:bg-dark-800"
+                        >
+                          <img src={imgSrc} alt="Invalid Receipt" className="w-full h-full object-cover" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Gift Card Preview Horizontal List */}
               {type === "giftcard" && images?.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-dashed border-border-light dark:border-border-dark flex flex-col gap-3">
@@ -453,6 +498,7 @@ export default function TransactionDetailPage() {
                           key={idx}
                           type="button"
                           onClick={() => {
+                            setActiveLightboxImages(images);
                             setCurrentImageIndex(idx);
                             setVisibleImage(true);
                           }}
@@ -560,11 +606,12 @@ export default function TransactionDetailPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Previous image */}
-            {images.length > 1 && (
+            {(activeLightboxImages.length > 0 ? activeLightboxImages : images).length > 1 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+                  const gallery = activeLightboxImages.length > 0 ? activeLightboxImages : images;
+                  setCurrentImageIndex((prev) => (prev === 0 ? gallery.length - 1 : prev - 1));
                 }}
                 className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
               >
@@ -572,18 +619,26 @@ export default function TransactionDetailPage() {
               </button>
             )}
 
-            <img
-              src={typeof images[currentImageIndex] === "string" ? images[currentImageIndex] : (images[currentImageIndex] as any)?.image}
-              alt="Gift Card Preview"
-              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
-            />
+            {(() => {
+              const gallery = activeLightboxImages.length > 0 ? activeLightboxImages : images;
+              const currentImg = gallery[currentImageIndex];
+              const imgSrc = typeof currentImg === "string" ? currentImg : (currentImg as any)?.image;
+              return (
+                <img
+                  src={imgSrc}
+                  alt="Gift Card Preview"
+                  className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                />
+              );
+            })()}
 
             {/* Next image */}
-            {images.length > 1 && (
+            {(activeLightboxImages.length > 0 ? activeLightboxImages : images).length > 1 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+                  const gallery = activeLightboxImages.length > 0 ? activeLightboxImages : images;
+                  setCurrentImageIndex((prev) => (prev === gallery.length - 1 ? 0 : prev + 1));
                 }}
                 className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
               >
@@ -594,7 +649,7 @@ export default function TransactionDetailPage() {
 
           {/* Index indicator */}
           <div className="mt-4 text-white/80 font-primary-bold text-b2 bg-black/40 px-4 py-1.5 rounded-full select-none">
-            {currentImageIndex + 1} / {images.length}
+            {currentImageIndex + 1} / {(activeLightboxImages.length > 0 ? activeLightboxImages : images).length}
           </div>
         </div>,
         document.body

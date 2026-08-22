@@ -37,16 +37,15 @@ export default function CreatePinPage() {
       if (token) payload.token = token;
 
       const response = await createUserPin({ data: payload }).unwrap();
-      if (response?.status === true || response?.success === true || response?.token) {
-        if (response?.token || response?.data?.token) {
-          TokenManager.setToken(response?.token || response?.data?.token);
-        }
-        setStep(2);
-      } else {
-        showToast(response?.message || "Failed to create PIN.", "error");
+      const tokenReceived =
+        response?.token || response?.data?.token || response?.data?.user?.token;
+      if (tokenReceived) {
+        TokenManager.setToken(tokenReceived);
       }
+      setStep(2);
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "Failed to create PIN.";
+      const errMsg =
+        err?.data?.message || err?.message || "Failed to create PIN.";
       showToast(errMsg, "error");
     }
   };
@@ -76,14 +75,19 @@ export default function CreatePinPage() {
 
       const response = await verifyUserPin({ data: payload }).unwrap();
 
-      if (response?.status === true || response?.success === true) {
-        showToast("PIN created and verified successfully!", "success");
+      showToast(
+        response?.data?.message ||
+          response?.message ||
+          "PIN created and verified successfully!",
+        "success"
+      );
+
+      setTimeout(() => {
         router.push(paths.auth.login);
-      } else {
-        showToast(response?.message || "Failed to verify PIN code.", "error");
-      }
+      }, 500);
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "Failed to verify PIN.";
+      const errMsg =
+        err?.data?.message || err?.message || "Failed to verify PIN.";
       showToast(errMsg, "error");
     }
   };

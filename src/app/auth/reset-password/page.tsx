@@ -106,17 +106,16 @@ export default function ResetPasswordPage() {
 
       const response = await resetPassword({ data: resetPayload }).unwrap();
 
-      if (response?.status === true || response?.success === true) {
-        showToast("Password reset successful! Please login.", "success");
-        router.push(paths.auth.login);
-      } else {
-        showToast(
+      showToast(
+        response?.data?.message ||
           response?.message ||
-            response?.data?.message ||
-            "Password reset failed.",
-          "error"
-        );
-      }
+          "Password reset successful! Please login.",
+        "success"
+      );
+
+      setTimeout(() => {
+        router.push(paths.auth.login);
+      }, 500);
     } catch (err: any) {
       const errMsg =
         err?.data?.message ||
@@ -137,14 +136,18 @@ export default function ResetPasswordPage() {
         data: payload,
       }).unwrap();
 
-      if (response?.status === true || response?.success === true) {
-        showToast("Reset code resent successfully!", "success");
-        setTimer(60);
-      } else {
-        showToast(response?.message || "Resend failed.", "error");
-      }
+      showToast(
+        response?.data?.message ||
+          response?.message ||
+          "Reset code resent successfully!",
+        "success"
+      );
+      setTimer(60);
     } catch (err: any) {
-      showToast(err?.data?.message || "Failed to resend code.", "error");
+      showToast(
+        err?.data?.message || err?.message || "Failed to resend code.",
+        "error"
+      );
     }
   };
 

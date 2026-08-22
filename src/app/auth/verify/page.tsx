@@ -48,17 +48,25 @@ export default function VerifyPage() {
 
       const response = await verifyOtp({ data: payload }).unwrap();
 
-      if (response?.status === true || response?.success === true || response?.token) {
-        showToast("Email verification successful!", "success");
-        if (response?.token || response?.data?.token) {
-          TokenManager.setToken(response?.token || response?.data?.token);
-        }
-        router.push(paths.auth.createPin);
-      } else {
-        showToast(response?.message || "Verification failed. Invalid OTP code.", "error");
+      const tokenReceived =
+        response?.token || response?.data?.token || response?.data?.user?.token;
+      if (tokenReceived) {
+        TokenManager.setToken(tokenReceived);
       }
+
+      showToast(
+        response?.data?.message ||
+          response?.message ||
+          "Email verification successful!",
+        "success"
+      );
+
+      setTimeout(() => {
+        router.push(paths.auth.createPin);
+      }, 500);
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "Verification failed.";
+      const errMsg =
+        err?.data?.message || err?.message || "Verification failed. Invalid OTP code.";
       showToast(errMsg, "error");
     }
   };
@@ -72,14 +80,19 @@ export default function VerifyPage() {
       if (email) payload.email = email;
 
       const response = await resendOtp({ data: payload }).unwrap();
-      if (response?.status === true || response?.success === true) {
-        showToast("OTP resent successfully!", "success");
-        setTimer(60);
-      } else {
-        showToast(response?.message || "Resend failed.", "error");
-      }
+
+      showToast(
+        response?.data?.message ||
+          response?.message ||
+          "OTP resent successfully!",
+        "success"
+      );
+      setTimer(60);
     } catch (err: any) {
-      showToast(err?.data?.message || "Failed to resend OTP.", "error");
+      showToast(
+        err?.data?.message || err?.message || "Failed to resend OTP.",
+        "error"
+      );
     }
   };
 

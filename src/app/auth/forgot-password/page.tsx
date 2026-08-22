@@ -37,15 +37,17 @@ export default function ForgotPasswordPage() {
 
     try {
       const response = await forgotPassword({ data: { email } }).unwrap();
-      if (response?.status === true || response?.success === true) {
-        showToast("OTP sent to your email!", "success");
-        dispatch(setUserEmail(email));
+      dispatch(setUserEmail(email));
+      showToast(
+        response?.data?.message || response?.message || "OTP sent to your email!",
+        "success"
+      );
+      setTimeout(() => {
         router.push(`${paths.auth.resetPassword}?email=${encodeURIComponent(email)}`);
-      } else {
-        showToast(response?.message || "Something went wrong. Please check your email.", "error");
-      }
+      }, 500);
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "Failed to process request.";
+      const errMsg =
+        err?.data?.message || err?.message || "Failed to process request.";
       showToast(errMsg, "error");
     }
   };

@@ -113,18 +113,28 @@ export default function RegisterPage() {
 
       const response = await registerUser({ data: payload }).unwrap();
 
-      if (response?.status === true || response?.success === true || response?.token) {
-        showToast("Registration successful! Verify your account.", "success");
-        if (response?.token || response?.data?.token) {
-          TokenManager.setToken(response?.token || response?.data?.token);
-        }
-        dispatch(setUserEmail(email));
-        router.push(`${paths.auth.verify}?email=${encodeURIComponent(email)}`);
-      } else {
-        showToast(response?.message || "Registration failed. Please try again.", "error");
+      const tokenReceived =
+        response?.token || response?.data?.token || response?.data?.user?.token;
+      if (tokenReceived) {
+        TokenManager.setToken(tokenReceived);
       }
+      dispatch(setUserEmail(email));
+
+      showToast(
+        response?.data?.message ||
+          response?.message ||
+          "Registration successful! Verify your account.",
+        "success"
+      );
+
+      setTimeout(() => {
+        router.push(`${paths.auth.verify}?email=${encodeURIComponent(email)}`);
+      }, 500);
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "An error occurred during registration.";
+      const errMsg =
+        err?.data?.message ||
+        err?.message ||
+        "An error occurred during registration.";
       showToast(errMsg, "error");
     }
   };

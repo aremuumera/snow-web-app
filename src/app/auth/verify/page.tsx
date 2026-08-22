@@ -8,6 +8,7 @@ import { OtpInput } from "@/components/ui/OtpInput";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastProvider";
 import { paths } from "@/utils/paths";
+import { TokenManager } from "@/utils/token-manager";
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -40,11 +41,19 @@ export default function VerifyPage() {
     }
 
     try {
-      const response = await verifyOtp({ data: { email, otp } }).unwrap();
+      const token = TokenManager.getToken();
+      const payload: Record<string, any> = { otp };
+      if (token) payload.token = token;
+      if (email) payload.email = email;
 
-      if (response?.status === true || response?.success === true) {
-        showToast("Email verification successful! Please login.", "success");
-        router.push(paths.auth.login);
+      const response = await verifyOtp({ data: payload }).unwrap();
+
+      if (response?.status === true || response?.success === true || response?.token) {
+        showToast("Email verification successful!", "success");
+        if (response?.token || response?.data?.token) {
+          TokenManager.setToken(response?.token || response?.data?.token);
+        }
+        router.push(paths.auth.createPin);
       } else {
         showToast(response?.message || "Verification failed. Invalid OTP code.", "error");
       }
@@ -57,7 +66,12 @@ export default function VerifyPage() {
   const handleResend = async () => {
     if (timer > 0) return;
     try {
-      const response = await resendOtp({ data: { email } }).unwrap();
+      const token = TokenManager.getToken();
+      const payload: Record<string, any> = {};
+      if (token) payload.token = token;
+      if (email) payload.email = email;
+
+      const response = await resendOtp({ data: payload }).unwrap();
       if (response?.status === true || response?.success === true) {
         showToast("OTP resent successfully!", "success");
         setTimer(60);

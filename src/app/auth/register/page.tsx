@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastProvider";
 import { paths } from "@/utils/paths";
+import { TokenManager } from "@/utils/token-manager";
 import { z } from "zod";
 
 const registerSchema = z
@@ -102,18 +103,21 @@ export default function RegisterPage() {
       const payload = {
         name,
         email,
-        phone: `${phone}`,
-        phoneCountryCode: "NG", // Default country code matching mobile config
-        phoneDialCode: countryCode,
         username,
+        phone: `${phone}`,
+        dial_code: countryCode,
         password,
-        confirmPassword,
+        confirm: confirmPassword,
+        ref: "",
       };
 
       const response = await registerUser({ data: payload }).unwrap();
 
-      if (response?.status === true || response?.success === true) {
+      if (response?.status === true || response?.success === true || response?.token) {
         showToast("Registration successful! Verify your account.", "success");
+        if (response?.token || response?.data?.token) {
+          TokenManager.setToken(response?.token || response?.data?.token);
+        }
         dispatch(setUserEmail(email));
         router.push(`${paths.auth.verify}?email=${encodeURIComponent(email)}`);
       } else {

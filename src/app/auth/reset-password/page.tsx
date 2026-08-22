@@ -10,6 +10,7 @@ import { OtpInput } from "@/components/ui/OtpInput";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastProvider";
 import { paths } from "@/utils/paths";
+import { TokenManager } from "@/utils/token-manager";
 import { z } from "zod";
 
 const resetPasswordSchema = z
@@ -63,12 +64,15 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const payload = {
-        email,
-        otp,
+      const token = TokenManager.getToken();
+      const payload: Record<string, any> = {
         password,
+        confirm: confirmPassword,
         confirmPassword,
       };
+      if (email) payload.email = email;
+      if (otp) payload.otp = otp;
+      if (token) payload.token = token;
 
       const response = await resetPassword({ data: payload }).unwrap();
 

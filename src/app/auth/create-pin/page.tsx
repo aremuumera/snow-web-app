@@ -2,23 +2,27 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCreateUserPinMutation } from "@/redux/auth/auth_api";
+import { useCreateUserPinMutation, useVerifyUserPinMutation } from "@/redux/auth/auth_api";
+import { useAppSelector } from "@/redux/store";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastProvider";
 import { paths } from "@/utils/paths";
+import { TokenManager } from "@/utils/token-manager";
 
 export default function CreatePinPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const [createUserPin, { isLoading }] = useCreateUserPinMutation();
+  const email = useAppSelector((state: any) => state.auth.email);
+  const [createUserPin, { isLoading: isCreating }] = useCreateUserPinMutation();
+  const [verifyUserPin, { isLoading: isVerifying }] = useVerifyUserPinMutation();
 
   const [step, setStep] = useState(1); // 1: Enter PIN, 2: Confirm PIN
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [error, setError] = useState("");
 
-  const handleNext = (e: React.FormEvent) => {
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -26,7 +30,25 @@ export default function CreatePinPage() {
       setError("Please enter a 4-digit PIN code");
       return;
     }
-    setStep(2);
+
+    try {
+      const token = TokenManager.getToken();
+      const payload: Record<string, any> = { pin };
+      if (token) payload.token = token;
+
+      const response = await createUserPin({ data: payload }).unwrap();
+      if (response?.status === true || response?.success === true || response?.token) {
+        if (response?.token || response?.data?.token) {
+          TokenManager.setToken(response?.token || response?.data?.token);
+        }
+        setStep(2);
+      } else {
+        showToast(response?.message || "Failed to create PIN.", "error");
+      }
+    } catch (err: any) {
+      const errMsg = err?.data?.message || err?.message || "Failed to create PIN.";
+      showToast(errMsg, "error");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,16 +69,21 @@ export default function CreatePinPage() {
     }
 
     try {
-      const response = await createUserPin({ data: { pin } }).unwrap();
+      const token = TokenManager.getToken();
+      const payload: Record<string, any> = { pin: confirmPin };
+      if (token) payload.token = token;
+      if (email) payload.email = email;
+
+      const response = await verifyUserPin({ data: payload }).unwrap();
 
       if (response?.status === true || response?.success === true) {
-        showToast("PIN created successfully!", "success");
-        router.push(paths.dashboard.home);
+        showToast("PIN created and verified successfully!", "success");
+        router.push(paths.auth.login);
       } else {
-        showToast(response?.message || "Failed to create PIN code.", "error");
+        showToast(response?.message || "Failed to verify PIN code.", "error");
       }
     } catch (err: any) {
-      const errMsg = err?.data?.message || err?.message || "Failed to create PIN.";
+      const errMsg = err?.data?.message || err?.message || "Failed to verify PIN.";
       showToast(errMsg, "error");
     }
   };
@@ -80,7 +107,7 @@ export default function CreatePinPage() {
             <OtpInput length={4} value={pin} onChange={setPin} error={error} />
           </div>
 
-          <Button type="submit" fullWidth>
+          <Button type="submit" fullWidth loading={isCreating}>
             Continue
           </Button>
         </form>
@@ -102,7 +129,7 @@ export default function CreatePinPage() {
             >
               Back
             </Button>
-            <Button type="submit" fullWidth loading={isLoading}>
+            <Button type="submit" fullWidth loading={isVerifying}>
               Submit PIN
             </Button>
           </div>
